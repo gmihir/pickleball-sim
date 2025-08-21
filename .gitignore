@@ -1,0 +1,24 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Next.js and Node.js
+website/node_modules
+website/.next/
+website/out/
+website/build/
+website/.DS_Store
+website/*.log
+website/.env*.local
+website/.env
+website/npm-debug.log*
+website/yarn-debug.log*
+website/yarn-error.log*
+website/pnpm-lock.yaml
+
+.DS_Store
+*.pem
+*.tgz
+.vscode*
