@@ -23,7 +23,7 @@ export default function SimulationResults({
   simulationCount,
 }: SimulationResultsProps) {
   if (isLoading) {
-    return <LoadingState simulationCount={simulationCount} />;
+    return <LoadingState />;
   }
 
   if (!results) {
@@ -34,7 +34,7 @@ export default function SimulationResults({
     recommendation,
     serveFirstWinRate,
     chooseSideWinRate,
-    optimalServer,
+        
   } = results;
 
   const isServeFirst = recommendation === 'Serve First';
@@ -52,11 +52,7 @@ export default function SimulationResults({
               >
                 {recommendation}
               </Badge>
-              {optimalServer && (
-                <Badge variant="outline" className="px-3 py-1">
-                  Optimal server: Player {optimalServer}
-                </Badge>
-              )}
+            
             </div>
           </div>
           <div className="flex gap-2">
@@ -119,18 +115,9 @@ export default function SimulationResults({
   );
 }
 
-function LoadingState({ simulationCount }: { simulationCount: number }) {
+function LoadingState() {
   return (
     <div className="space-y-4">
-      <div className="space-y-3">
-        <div>
-          <h2 className="text-xl font-bold">Running Simulation...</h2>
-          <p className="text-sm text-muted-foreground">
-            Analyzing {simulationCount.toLocaleString()} matches...
-          </p>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {[1, 2, 3].map((i) => (
           <Card key={i}>
@@ -143,19 +130,6 @@ function LoadingState({ simulationCount }: { simulationCount: number }) {
           </Card>
         ))}
       </div>
-
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex h-64 items-center justify-center sm:h-80">
-            <div className="text-center">
-              <Skeleton className="mb-4 h-32 w-full sm:h-40" />
-              <p className="text-sm text-muted-foreground">
-                Processing {simulationCount.toLocaleString()} simulation data...
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

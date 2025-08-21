@@ -12,21 +12,16 @@ export function runSimulation(config: SimulationConfig): SimulationResults {
     firstPointRule,
     players,
   } = config;
-
-  let team1Strength: number;
-  let team2Strength: number;
+  
+  let yourTeamStrength: number;
+  let opponentsStrength: number;
 
   if (gameFormat === 'singles') {
-    team1Strength = players[0];
-    team2Strength = players[0];
+    yourTeamStrength = players[0];
+    opponentsStrength = players[1];
   } else {
-    team1Strength = (players[0] + players[1]) / 2;
-    team2Strength = (players[2] + players[3]) / 2;
-  }
-
-  let optimalServer: number | undefined = undefined;
-  if (gameFormat === 'doubles') {
-    optimalServer = players[0] >= players[1] ? 1 : 2;
+    yourTeamStrength = (players[0] + players[1]) / 2;
+    opponentsStrength = (players[2] + players[3]) / 2;
   }
 
   let serveFirstWins = 0;
@@ -34,32 +29,30 @@ export function runSimulation(config: SimulationConfig): SimulationResults {
 
   for (let i = 0; i < simulationCount; i++) {
     const serveFirstResult = simulateMatch(
-      team1Strength,
-      team2Strength,
+      yourTeamStrength,
+      opponentsStrength,
       pointsPerGame,
       matchFormat === 'bestOf3' ? 2 : 1,
-      sideAdvantage,
+      Math.abs(sideAdvantage),
       firstPointRule,
-      true, // team 1 serves first
+      true,
+      gameFormat,
     );
-
-    const serveFirstWin = serveFirstResult.winner === 1;
-    if (serveFirstWin) {
+    if (serveFirstResult.winner === 1) {
       serveFirstWins++;
     }
 
     const chooseSideResult = simulateMatch(
-      team1Strength,
-      team2Strength,
+      yourTeamStrength,
+      opponentsStrength,
       pointsPerGame,
       matchFormat === 'bestOf3' ? 2 : 1,
-      sideAdvantage,
+      -Math.abs(sideAdvantage),
       firstPointRule,
-      false, // team 2 serves first
+      false,
+      gameFormat,
     );
-
-    const chooseSideWin = chooseSideResult.winner === 1;
-    if (chooseSideWin) {
+    if (chooseSideResult.winner === 1) {
       chooseSideWins++;
     }
   }
@@ -74,8 +67,7 @@ export function runSimulation(config: SimulationConfig): SimulationResults {
     simulationCount,
     recommendation,
     serveFirstWinRate,
-    chooseSideWinRate,
-    optimalServer: recommendation === 'Serve First' ? optimalServer : undefined,
+    chooseSideWinRate
   };
 }
 
@@ -87,13 +79,21 @@ function simulateMatch(
   sideAdvantage: number,
   firstPointRule: boolean,
   team1ServesFirst: boolean,
-): { winner: number; team1Score: number; team2Score: number } {
+  gameFormat: 'singles' | 'doubles',
+): { winner: number; } {
   let team1Wins = 0;
   let team2Wins = 0;
   let team1TotalScore = 0;
   let team2TotalScore = 0;
 
+  let gameNum = 0;
+  
   while (team1Wins < winsNeeded && team2Wins < winsNeeded) {
+    gameNum++;
+    
+    const maxPossibleGames = winsNeeded * 2 - 1;
+    const isLastGame = gameNum === maxPossibleGames;
+    
     const gameResult = simulateGame(
       team1Strength,
       team2Strength,
@@ -101,6 +101,8 @@ function simulateMatch(
       sideAdvantage,
       firstPointRule,
       team1ServesFirst,
+      isLastGame,
+      gameFormat,
     );
 
     if (gameResult.winner === 1) {
@@ -112,13 +114,14 @@ function simulateMatch(
     team1TotalScore += gameResult.team1Score;
     team2TotalScore += gameResult.team2Score;
 
-    team1ServesFirst = !team1ServesFirst;
+    if (team1Wins < winsNeeded && team2Wins < winsNeeded) {
+      team1ServesFirst = !team1ServesFirst;
+      sideAdvantage = -sideAdvantage;
+    }
   }
 
   return {
-    winner: team1Wins > team2Wins ? 1 : 2,
-    team1Score: team1TotalScore,
-    team2Score: team2TotalScore,
+    winner: team1Wins > team2Wins ? 1 : 2
   };
 }
 
@@ -127,46 +130,124 @@ function simulateGame(
   team2Strength: number,
   pointsToWin: number,
   sideAdvantage: number,
-  firstPointRule: boolean,
+  automaticallyLoseFirstPoint: boolean,
   team1ServesFirst: boolean,
+  flipSideAtHalfway: boolean,
+  gameFormat: 'singles' | 'doubles',
 ): { winner: number; team1Score: number; team2Score: number } {
+
   let team1Score = 0;
   let team2Score = 0;
   let team1Serving = team1ServesFirst;
+  let currentSideAdvantage = sideAdvantage;
+  const halfway = Math.ceil(pointsToWin / 2);
+  let sideSwitched = false;
 
-  if (firstPointRule) {
+  let server = team1ServesFirst ? 1 : 3;
+
+
+  if (automaticallyLoseFirstPoint) {
     if (team1Serving) {
-      team2Score++;
+      team2Score++;        
+      team1Serving = false; 
     } else {
       team1Score++;
+      team1Serving = true;
     }
-    team1Serving = !team1Serving;
+
+    if(server === 1) {
+      server = 3;
+    }
+    else {
+      server = 1;
+    }
   }
 
-  while (true) {
-    if (
-      (team1Score >= pointsToWin || team2Score >= pointsToWin) &&
-      Math.abs(team1Score - team2Score) >= 2
-    ) {
-      break;
-    }
-
-    const team1WinProb = calculatePointWinProbability(
-      team1Strength,
-      team2Strength,
-      team1Serving,
-      sideAdvantage,
-    );
-
-    if (Math.random() < team1WinProb) {
-      team1Score++;
-      if (!team1Serving) {
-        team1Serving = true;
+  if (gameFormat === 'singles') {
+    while (true) {
+      if (
+        (team1Score >= pointsToWin || team2Score >= pointsToWin) &&
+        Math.abs(team1Score - team2Score) >= 2
+      ) {
+        break;
       }
-    } else {
-      team2Score++;
+
+      if (flipSideAtHalfway && !sideSwitched && (team1Score >= halfway || team2Score >= halfway)) {
+        currentSideAdvantage = -currentSideAdvantage;
+        sideSwitched = true;
+      }
+
+      const team1WinProb = calculatePointWinProbability(
+        team1Strength,
+        team2Strength,
+        team1Serving,
+        currentSideAdvantage,
+      );
+
+      const pointWonByTeam1 = Math.random() < team1WinProb;
+
       if (team1Serving) {
-        team1Serving = false;
+        if (pointWonByTeam1) {
+          team1Score++;
+        } else {
+          team1Serving = false;
+        }
+      } else {
+        if (!pointWonByTeam1) {
+          team2Score++;
+        } else {
+          team1Serving = true;
+        }
+      }
+    }
+  } else {
+    while (true) {
+      if (
+        (team1Score >= pointsToWin || team2Score >= pointsToWin) &&
+        Math.abs(team1Score - team2Score) >= 2
+      ) {
+        break;
+      }
+
+      if (flipSideAtHalfway && !sideSwitched && (team1Score >= halfway || team2Score >= halfway)) {
+        currentSideAdvantage = -currentSideAdvantage;
+        sideSwitched = true;
+      }
+
+      const team1IsServing = server === 1 || server === 2;
+      const team1WinProb = calculatePointWinProbability(
+        team1Strength,
+        team2Strength,
+        team1IsServing,
+        currentSideAdvantage,
+      );
+
+      const pointWonByTeam1 = Math.random() < team1WinProb;
+
+      if (server === 1) { // team1 first server
+        if (pointWonByTeam1) {
+          team1Score++;
+        } else {
+          server = 2; // go to team1 second server
+        }
+      } else if (server === 2) { // team1 second server
+        if (pointWonByTeam1) {
+          team1Score++;
+        } else {
+          server = 3; // go to team2 first server
+        }
+      } else if (server === 3) { // team2 first server
+        if (!pointWonByTeam1) { // team2 wins
+          team2Score++;
+        } else {
+          server = 4; // go to team2 second server
+        }
+      } else if (server === 4) { // team2 second server
+        if (!pointWonByTeam1) { // team2 wins
+          team2Score++;
+        } else {
+          server = 1; // back to team1 first server
+        }
       }
     }
   }
@@ -184,19 +265,18 @@ function calculatePointWinProbability(
   team1Serving: boolean,
   sideAdvantage: number,
 ): number {
-  // P(win) = 1 / (1 + 10^((opponent - player) / scale))
-  // this is ripped off from chess elo calculations lol
   const scale = 1.0;
   let baseProb = 1 / (1 + Math.pow(10, (team2Strength - team1Strength) / scale));
 
-  if (team1Serving) {
-    baseProb -= (SERVING_DISADVANTAGE - 0.5);
-  } else {
-    baseProb += (SERVING_DISADVANTAGE - 0.5);
-  }
-
   const sideEffect = sideAdvantage * 0.01;
   baseProb += sideEffect;
+
+  const SERVING_PENALTY = SERVING_DISADVANTAGE - 0.50; 
+  if (team1Serving) {
+    baseProb -= SERVING_PENALTY;
+  } else {
+    baseProb += SERVING_PENALTY;
+  }
 
   return Math.max(0.05, Math.min(0.95, baseProb));
 }

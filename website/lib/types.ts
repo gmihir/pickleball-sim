@@ -13,5 +13,4 @@ export interface SimulationResults {
   recommendation: 'Serve First' | 'Choose Side';
   serveFirstWinRate: number;
   chooseSideWinRate: number;
-  optimalServer?: number;
 }

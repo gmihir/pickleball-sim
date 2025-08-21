@@ -42,7 +42,8 @@ export default function SimulationForm({ onSimulate }: SimulationFormProps) {
   const [firstPointRule, setFirstPointRule] = useState(false);
   const [simulationCount, setSimulationCount] = useState(100000);
 
-  const [singleRating, setSingleRating] = useState('4.5');
+  const [singlesPlayer1, setSinglesPlayer1] = useState('4.5');
+  const [singlesPlayer2, setSinglesPlayer2] = useState('4.5');
 
   const [team1Player1, setTeam1Player1] = useState('4.5');
   const [team1Player2, setTeam1Player2] = useState('4.0');
@@ -61,7 +62,7 @@ export default function SimulationForm({ onSimulate }: SimulationFormProps) {
       firstPointRule,
       players:
         gameFormat === 'singles'
-          ? [Number.parseFloat(singleRating)]
+          ? [Number.parseFloat(singlesPlayer1), Number.parseFloat(singlesPlayer2)]
           : [
               Number.parseFloat(team1Player1),
               Number.parseFloat(team1Player2),
@@ -157,7 +158,7 @@ export default function SimulationForm({ onSimulate }: SimulationFormProps) {
           <div className="flex items-center gap-4">
             <Slider
               id="simulationCount"
-              min={1}
+              min={1000}
               max={1000000}
               step={1000}
               value={[simulationCount]}
@@ -182,26 +183,44 @@ export default function SimulationForm({ onSimulate }: SimulationFormProps) {
         </div>
 
         {gameFormat === 'singles' ? (
-          <div className="space-y-2">
-            <Label htmlFor="singleRating" className="text-sm">
-              Player Rating
-            </Label>
-            <Input
-              id="singleRating"
-              type="number"
-              step="0.1"
-              min="2.0"
-              max="8.0"
-              value={singleRating}
-              onChange={(e) => setSingleRating(e.target.value)}
-              className="h-12 text-lg"
-              placeholder="4.5"
-            />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="singlesPlayer1" className="text-sm">
+                Player 1 Rating
+              </Label>
+              <Input
+                id="singlesPlayer1"
+                type="number"
+                step="0.1"
+                min="2.0"
+                max="8.0"
+                value={singlesPlayer1}
+                onChange={(e) => setSinglesPlayer1(e.target.value)}
+                className="h-12 text-lg"
+                placeholder="4.5"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="singlesPlayer2" className="text-sm">
+                Player 2 Rating
+              </Label>
+              <Input
+                id="singlesPlayer2"
+                type="number"
+                step="0.1"
+                min="2.0"
+                max="8.0"
+                value={singlesPlayer2}
+                onChange={(e) => setSinglesPlayer2(e.target.value)}
+                className="h-12 text-lg"
+                placeholder="4.5"
+              />
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
             <div>
-              <h4 className="mb-3 text-sm font-medium">Team 1</h4>
+              <h4 className="mb-3 text-sm font-medium">Good Guys</h4>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="team1Player1" className="text-xs">
@@ -239,7 +258,7 @@ export default function SimulationForm({ onSimulate }: SimulationFormProps) {
             </div>
 
             <div>
-              <h4 className="mb-3 text-sm font-medium">Team 2</h4>
+              <h4 className="mb-3 text-sm font-medium">Bad Guys</h4>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="team2Player1" className="text-xs">
@@ -285,34 +304,30 @@ export default function SimulationForm({ onSimulate }: SimulationFormProps) {
             Side Advantage
           </Label>
           <span className="text-sm font-medium text-muted-foreground">
-            {sideAdvantage[0] < 0
-              ? `Left side: ${Math.abs(sideAdvantage[0])}`
-              : sideAdvantage[0] > 0
-                ? `Right side: ${sideAdvantage[0]}`
-                : 'No advantage'}
+            {`${sideAdvantage[0]}%`}
           </span>
         </div>
         <div className="px-2">
           <div className="flex items-center space-x-4">
             <span className="min-w-0 text-xs text-muted-foreground">
-              Left (-5)
+              0
             </span>
             <Slider
               id="sideAdvantage"
-              min={-5}
-              max={5}
+              min={0}
+              max={10}
               step={1}
               value={sideAdvantage}
               onValueChange={setSideAdvantage}
               className="flex-1"
             />
             <span className="min-w-0 text-xs text-muted-foreground">
-              Right (+5)
+              10
             </span>
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
-          Each discrete value represents a 1% advantage
+          Each discrete value represents a 1% advantage. 0 means no advantage.
         </p>
       </div>
 
