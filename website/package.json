@@ -2,7 +2,10 @@
   "name": "pickleball-simulator",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://gmihir.github.io/pickleball-sim",
   "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d out",
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
@@ -64,6 +67,7 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "gh-pages": "^6.3.0",
     "postcss": "^8.5",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"
